@@ -8,6 +8,8 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <string.h>
+#include <vector>
+using namespace std;
 
 
 
@@ -33,44 +35,66 @@ int main(int argc, char **argv)
   ros::NodeHandle nh("~");
 
   // Initialize publisher.
-  ros::Publisher pub = nh.advertise<std_msgs::String>(std::string("publish_data"), 1);
+  ros::Publisher pub = nh.advertise<std_msgs::String>(std::string("publish_data_vu8"), 1);
 
-  ros::Rate loop_rate(10.0);
+  ros::Rate loop_rate(60.0);
 
-  std::ifstream publish_file("/home/narayan/catkin_vu8_ws/src/leddarVu8_publisher/src/vu8_sensor_results.txt");
+  std::ifstream publish_file("/home/dasc/catkin_vu8_ws/src/leddarVu8_publisher/src/vu8_sensor_results.txt");
   std::string publish_txt;
   std::string line;
   std_msgs::String msg;
+  std::string data_block;
+  vector<int> channels;
+  int index;
+  int peek_file_val;
 
-  // while(getline(publish_file, line))
-  // {
-  //   publish_txt.append(line);
-  //   publish_txt.append("\n");
-  // }
+  getline(publish_file, line);
+  channels.push_back(line[0]);
+  ++index;
+  data_block = '\n' + line + '\n';	
 
-  while(getline(publish_file, line))
+  while(1)
   {
-    
-    msg.data = line;
+	peek_file_val = publish_file.peek();
+    	if(peek_file_val != EOF)
+    	{      
+	    getline(publish_file, line);
+	    channels.push_back(line[0]);
+	    
+            if(channels[index] > channels[index - 1])
+	    {
+	    
+		    msg.data = data_block;
 
-    ROS_INFO("%s", msg.data.c_str());
-      
-    /*
-    * The publish() function is how you send messages. The parameter
-    * is the message object. The type of this object must agree with the type
-    * given as a template parameter to the advertise<>() call, as was done
-    * in the constructor above.
-    */
+		    ROS_INFO("%s", msg.data.c_str());
+		      
+		    /*
+		    * The publish() function is how you send messages. The parameter
+		    * is the message object. The type of this object must agree with the type
+		    * given as a template parameter to the advertise<>() call, as was done
+		    * in the constructor above.
+		    */
 
-    pub.publish(msg);
+		    pub.publish(msg);
 
-    ros::spinOnce();
+		    ros::spinOnce();
 
-    loop_rate.sleep();
-
+		    loop_rate.sleep();
+		    
+		    data_block = '\n';
+	    }
+	    
+            data_block += line + '\n';
+            ++index;
+            
+    	}
+	
+	else
+	{
+	     publish_file.clear();
+	}
   }
 
 }
-
 
 
